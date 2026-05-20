@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-@TeleOp(name = "MainOP")
-public class MainOp extends LinearOpMode {
+@TeleOp(name = "ManualOp")
+public class ManualOp extends LinearOpMode {
 
     // PID constants for gaylestas
     public static double Kp1 = 0.01;
