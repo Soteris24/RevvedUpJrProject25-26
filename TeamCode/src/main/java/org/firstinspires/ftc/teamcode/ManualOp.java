@@ -4,6 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
 @TeleOp(name = "ManualOp")
 public class ManualOp extends LinearOpMode {
@@ -14,17 +16,17 @@ public class ManualOp extends LinearOpMode {
     public static double Kd1 = 0.0001;
 
     // PID constants for gayandrikos
-    public static double Kp2 = 0.05;
+    public static double Kp2 = 0.01;
     public static double Ki2 = 0.0;
     public static double Kd2 = 0.0001;
 
     // PID constants for gayargiris
-    public static double Kp3 = 0.01;
+    public static double Kp3 = 0.02 ;
     public static double Ki3 = 0.0;
     public static double Kd3 = 0.0001;
 
     // PID constants for straightsoteris
-    public static double Kp4 = 0.05;
+    public static double Kp4 = 0.01;
     public static double Ki4 = 0.0;
     public static double Kd4 = 0.0001;
 
@@ -32,19 +34,41 @@ public class ManualOp extends LinearOpMode {
     private DcMotorEx motor2;
     private DcMotorEx motor3;
     private DcMotorEx motor4;
+    private DcMotorEx baseLeft;
+    private DcMotorEx baseRight;
 
     private PIDController pid1;
     private PIDController pid2;
     private PIDController pid3;
     private PIDController pid4;
 
+    // Servos
+
+    private Servo claw; double clawPos = 0;
+    private Servo drill; double drillPos = 0;
+    private Servo clawMove; double clawMovePos = 0;
+    private Servo drillMove; double drillMovePos = 0;
+    private Servo servoSoteris; double servoSoterisPos = 0;
+    private Servo gaytommys; double gaytommysPos = 0;
+
     @Override
     public void runOpMode() throws InterruptedException {
+        //Initialize Servos
+        claw = hardwareMap.get(Servo.class, "claw");
+        clawMove = hardwareMap.get(Servo.class, "clawMove");
+        drill = hardwareMap.get(Servo.class, "drill");
+        drillMove = hardwareMap.get(Servo.class, "drillMove");
+        servoSoteris = hardwareMap.get(Servo.class, "servoSoteris");
+        gaytommys = hardwareMap.get(Servo.class, "shades");
+
         // Initialize motors
         motor1 = hardwareMap.get(DcMotorEx.class, "gaylestas");
         motor2 = hardwareMap.get(DcMotorEx.class, "gayandrikos");
         motor3 = hardwareMap.get(DcMotorEx.class, "gayargiris");
         motor4 = hardwareMap.get(DcMotorEx.class, "straightsoteris");
+        baseLeft = hardwareMap.get(DcMotorEx.class, "baseLeft");
+        baseRight = hardwareMap.get(DcMotorEx.class, "baseRight");
+
         
         // Setup motor1 (gaylestas)
         motor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -76,6 +100,9 @@ public class ManualOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
+            baseLeft.setPower(gamepad1.left_stick_y);
+            baseRight.setPower(gamepad1.right_stick_y);
+
             if (gamepad1.dpad_up) {
                 pid1.changeTargetPosition(15);
             } else if (gamepad1.dpad_down) {
@@ -89,9 +116,9 @@ public class ManualOp extends LinearOpMode {
             }
 
             if (gamepad1.a) {
-                pid3.changeTargetPosition(15);
+                pid3.changeTargetPosition(2);
             } else if (gamepad1.b) {
-                pid3.changeTargetPosition(-15);
+                pid3.changeTargetPosition(-2);
             }
 
             if (gamepad1.x) {
@@ -110,6 +137,37 @@ public class ManualOp extends LinearOpMode {
             motor3.setPower(power3);
             motor4.setPower(power4);
 
+            // Gamepad 2 Servo Control
+            if (gamepad2.a) clawPos += 0.01;
+            else if (gamepad2.b) clawPos -= 0.01;
+            clawPos = Range.clip(clawPos, 0, 1);
+            claw.setPosition(clawPos);
+
+            if (gamepad2.x) drillPos += 0.01;
+            else if (gamepad2.y) drillPos -= 0.01;
+            drillPos = Range.clip(drillPos, 0, 1);
+            drill.setPosition(drillPos);
+
+            if (gamepad2.dpad_up) clawMovePos += 0.01;
+            else if (gamepad2.dpad_down) clawMovePos -= 0.01;
+            clawMovePos = Range.clip(clawMovePos, 0, 1);
+            clawMove.setPosition(clawMovePos);
+
+            if (gamepad2.dpad_right) drillMovePos += 0.01;
+            else if (gamepad2.dpad_left) drillMovePos -= 0.01;
+            drillMovePos = Range.clip(drillMovePos, 0, 1);
+            drillMove.setPosition(drillMovePos);
+
+            if (gamepad2.left_bumper) servoSoterisPos += 0.01;
+            else if (gamepad2.right_bumper) servoSoterisPos -= 0.01;
+            servoSoterisPos = Range.clip(servoSoterisPos, 0, 1);
+            servoSoteris.setPosition(servoSoterisPos);
+
+            if (gamepad2.left_trigger > 0.5) gaytommysPos += 0.01;
+            else if (gamepad2.right_trigger > 0.5) gaytommysPos -= 0.01;
+            gaytommysPos = Range.clip(gaytommysPos, 0, 1);
+            gaytommys.setPosition(gaytommysPos);
+
             // Telemetry
             telemetry.addData("Gaylestas Target", pid1.getTargetPosition());
             telemetry.addData("Gaylestas Current", motor1.getCurrentPosition());
@@ -124,6 +182,13 @@ public class ManualOp extends LinearOpMode {
 
             telemetry.addData("Straightsoteris Target", pid4.getTargetPosition());
             telemetry.addData("Straightsoteris Current", motor4.getCurrentPosition());
+
+            telemetry.addData("Claw Pos", clawPos);
+            telemetry.addData("Drill Pos", drillPos);
+            telemetry.addData("Claw Move Pos", clawMovePos);
+            telemetry.addData("Drill Move Pos", drillMovePos);
+            telemetry.addData("Soteris Servo Pos", servoSoterisPos);
+            telemetry.addData("Tommys Servo Pos", gaytommysPos);
 
             telemetry.update();
         }
