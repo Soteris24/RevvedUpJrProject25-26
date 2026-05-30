@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -45,9 +46,9 @@ public class ManualOp extends LinearOpMode {
     // Servos
 
     private Servo claw; double clawPos = 0;
-    private Servo drill; double drillPos = 0;
+    private CRServo drill; double drillPower = 0;
     private Servo clawMove; double clawMovePos = 0;
-    private Servo drillMove; double drillMovePos = 0;
+    private Servo drillMove; double drillMovePos = 1;
     private Servo servoSoteris; double servoSoterisPos = 0;
     private Servo gaytommys; double gaytommysPos = 0;
 
@@ -56,7 +57,7 @@ public class ManualOp extends LinearOpMode {
         //Initialize Servos
         claw = hardwareMap.get(Servo.class, "claw");
         clawMove = hardwareMap.get(Servo.class, "clawMove");
-        drill = hardwareMap.get(Servo.class, "drill");
+        drill = hardwareMap.get(CRServo.class, "drill");
         drillMove = hardwareMap.get(Servo.class, "drillMove");
         servoSoteris = hardwareMap.get(Servo.class, "servoSoteris");
         gaytommys = hardwareMap.get(Servo.class, "shades");
@@ -143,10 +144,12 @@ public class ManualOp extends LinearOpMode {
             clawPos = Range.clip(clawPos, 0, 1);
             claw.setPosition(clawPos);
 
-            if (gamepad2.x) drillPos += 0.01;
-            else if (gamepad2.y) drillPos -= 0.01;
-            drillPos = Range.clip(drillPos, 0, 1);
-            drill.setPosition(drillPos);
+            if (gamepad2.x) {
+                drillPower = 1.0;
+            } else if (gamepad2.y) {
+                drillPower = 0.0;
+            }
+            drill.setPower(drillPower);
 
             if (gamepad2.dpad_up) clawMovePos += 0.01;
             else if (gamepad2.dpad_down) clawMovePos -= 0.01;
@@ -184,7 +187,7 @@ public class ManualOp extends LinearOpMode {
             telemetry.addData("Straightsoteris Current", motor4.getCurrentPosition());
 
             telemetry.addData("Claw Pos", clawPos);
-            telemetry.addData("Drill Pos", drillPos);
+            telemetry.addData("Drill Power", drillPower);
             telemetry.addData("Claw Move Pos", clawMovePos);
             telemetry.addData("Drill Move Pos", drillMovePos);
             telemetry.addData("Soteris Servo Pos", servoSoterisPos);
