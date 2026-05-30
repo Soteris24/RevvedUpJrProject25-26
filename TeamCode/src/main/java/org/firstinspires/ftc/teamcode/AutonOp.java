@@ -1,15 +1,18 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-@TeleOp(name = "ManualOp")
-public class ManualOp extends LinearOpMode {
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
+@Autonomous(name = "AutonOp")
+public class AutonOp extends LinearOpMode {
 
     // PID constants for gaylestas
     public static double Kp1 = 0.01;
@@ -50,6 +53,8 @@ public class ManualOp extends LinearOpMode {
     private PIDController pid4;
     private PIDController pid5;
 
+    private DistanceSensor leftDistanceSensor, rightDistanceSensor;
+
     // Servos
 
     private Servo claw; double clawPos = 0;
@@ -57,6 +62,9 @@ public class ManualOp extends LinearOpMode {
     private Servo clawMove; double clawMovePos = 0;
     private Servo drillMove; double drillMovePos = 1;
     private Servo gaytommys; double gaytommysPos = 0;
+
+    public enum currentState {SET_POSITION, IDLE, MOVE_FORWARD, COLLECT, REST_POS}
+    private currentState state = currentState.IDLE;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -67,6 +75,8 @@ public class ManualOp extends LinearOpMode {
         drillMove = hardwareMap.get(Servo.class, "drillMove");
         coreSoteris = hardwareMap.get(DcMotorEx.class, "coreSoteris");
         gaytommys = hardwareMap.get(Servo.class, "shades");
+        leftDistanceSensor = hardwareMap.get(DistanceSensor.class, "leftDistanceSensor");
+        rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
 
         // Initialize motors
         motor1 = hardwareMap.get(DcMotorEx.class, "gaylestas");
@@ -74,10 +84,10 @@ public class ManualOp extends LinearOpMode {
         motor3 = hardwareMap.get(DcMotorEx.class, "gayargiris");
         motor4 = hardwareMap.get(DcMotorEx.class, "straightsoteris");
         baseLeft = hardwareMap.get(DcMotorEx.class, "baseLeft");
-        baseLeft.setDirection(DcMotorEx.Direction.REVERSE);
+        baseRight.setDirection(DcMotor.Direction.REVERSE);
         baseRight = hardwareMap.get(DcMotorEx.class, "baseRight");
 
-        
+
         // Setup motor1 (gaylestas)
         motor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -114,31 +124,28 @@ public class ManualOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            baseLeft.setPower(gamepad1.left_stick_y);
-            baseRight.setPower(gamepad1.right_stick_y);
 
-            if (gamepad1.dpad_up) {
-                pid1.changeTargetPosition(15);
-            } else if (gamepad1.dpad_down) {
-                pid1.changeTargetPosition(-15);
-            }
+            switch (state) {
+                case SET_POSITION:
+                    break;
+                case IDLE:
+                    break;
+                case MOVE_FORWARD:
+                    if (leftDistanceSensor.getDistance(DistanceUnit.CM) < 10) {
+                        baseLeft.setPower(1);
+                        baseRight.setPower(1);
+                    } else {
+                        baseLeft.setPower(0);
+                        baseRight.setPower(0);
+                        break;
+                    }
 
-            if (gamepad1.dpad_right) {
-                pid2.changeTargetPosition(10);
-            } else if (gamepad1.dpad_left) {
-                pid2.changeTargetPosition(-10);
-            }
+                    break;
+                case COLLECT:
+                    break;
+                case REST_POS:
+                    break;
 
-            if (gamepad1.a) {
-                pid3.changeTargetPosition(2);
-            } else if (gamepad1.b) {
-                pid3.changeTargetPosition(-2);
-            }
-
-            if (gamepad1.x) {
-                pid4.changeTargetPosition(10);
-            } else if (gamepad1.y) {
-                pid4.changeTargetPosition(-10);
             }
 
             double power1 = pid1.update(motor1.getCurrentPosition());
@@ -152,40 +159,6 @@ public class ManualOp extends LinearOpMode {
             motor3.setPower(power3);
             motor4.setPower(power4);
             coreSoteris.setPower(power5);
-
-            // Gamepad 2 Servo Control
-            if (gamepad2.a) clawPos += 0.01;
-            else if (gamepad2.b) clawPos -= 0.01;
-            clawPos = Range.clip(clawPos, 0, 1);
-            claw.setPosition(clawPos);
-
-            if (gamepad2.x) {
-                drillPower = 1.0;
-            } else if (gamepad2.y) {
-                drillPower = 0.0;
-            }
-            drill.setPower(drillPower);
-
-            if (gamepad2.dpad_up) clawMovePos += 0.01;
-            else if (gamepad2.dpad_down) clawMovePos -= 0.01;
-            clawMovePos = Range.clip(clawMovePos, 0, 1);
-            clawMove.setPosition(clawMovePos);
-
-            if (gamepad2.dpad_right) drillMovePos += 0.01;
-            else if (gamepad2.dpad_left) drillMovePos -= 0.01;
-            drillMovePos = Range.clip(drillMovePos, 0, 1);
-            drillMove.setPosition(drillMovePos);
-
-            if (gamepad2.left_bumper) {
-                pid5.changeTargetPosition(10);
-            } else if (gamepad2.right_bumper) {
-                pid5.changeTargetPosition(-10);
-            }
-
-            if (gamepad2.left_trigger > 0.5) gaytommysPos += 0.01;
-            else if (gamepad2.right_trigger > 0.5) gaytommysPos -= 0.01;
-            gaytommysPos = Range.clip(gaytommysPos, 0, 1);
-            gaytommys.setPosition(gaytommysPos);
 
             // Telemetry
             telemetry.addData("Gaylestas Target", pid1.getTargetPosition());
@@ -201,9 +174,6 @@ public class ManualOp extends LinearOpMode {
 
             telemetry.addData("Straightsoteris Target", pid4.getTargetPosition());
             telemetry.addData("Straightsoteris Current", motor4.getCurrentPosition());
-
-            telemetry.addData("CoreSoteris Target", pid5.getTargetPosition());
-            telemetry.addData("CoreSoteris Current", coreSoteris.getCurrentPosition());
 
             telemetry.addData("CoreSoteris Target", pid5.getTargetPosition());
             telemetry.addData("CoreSoteris Current", coreSoteris.getCurrentPosition());
